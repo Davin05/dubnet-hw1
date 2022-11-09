@@ -554,6 +554,14 @@ void test_connected_layer()
 
 void test_im2col()
 {
+    tensor test = tensor_vmake(3,1,2,2);
+    test.data[0] = 1;
+    test.data[1] = 2;
+    test.data[2] = 3;
+    test.data[3] = 4;
+    tensor result = im2col(test, 2,2,1,1);
+
+
     image im = load_image("data/test/dog.jpg"); 
     tensor t = image_to_tensor(im);
     tensor col = im2col(t, 3, 3, 2, 1);

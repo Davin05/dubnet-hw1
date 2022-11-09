@@ -67,6 +67,7 @@ void try_hw1()
 
 int main(int argc, char **argv)
 {
+    test_hw1();
     if(argc < 2){
         printf("usage: %s [test | tryhw0 | tryhw1]\n", argv[0]);  
     } else if (0 == strcmp(argv[1], "tryhw0")){

@@ -28,12 +28,40 @@ tensor im2col(tensor im, size_t size_y, size_t size_x, size_t stride, size_t pad
     size_t cols = res_w * res_h;
 
     tensor col = tensor_vmake(2, rows, cols);
+    float* colData = col.data;
 
     // TODO: 5.1
     // Fill in the column matrix with patches from the image
+    for(int i = 0; i < im_c; i++) {
+        int colnum = 0;
+        for(int j = 0 - pad; j < im_w + pad - size_x; j += stride) {
+            for(int k = 0-pad; k < im_h + pad - size_y; j+= stride) {
+                for(int convRow= 0; convRow < size_y; convRow++) {
+                    for(int convCol = 0; convCol < size_x; convCol++) {
+                        colData[colnum+ rows*(convRow + convCol)];
+                        size_t imXcoord = j + convRow;
+                        size_t imYcoord = k + convRow;
+                        if(imXcoord < 0 || imXcoord >= im_w || imYcoord < 0 || imYcoord >= im_h){
+                            colData[colnum+ rows*(convRow + convCol)] = 0;
+                            // we want to add size_x*size_y*i*rows rows down
+                        } else {
+                            colData[colnum + rows*(convRow + convCol)] = im.data[imXcoord + imYcoord*im_w];
+                        }
+                    }
+                }
+                colnum++;
+            }
+        }
+    }
+
 
     return col;
 }
+
+// void oneChannel(tensor im, tensor* colP, int channelNum, size_t size_x, size_t size_y, size_t stride, size_t pad){
+//     tensor col = *colP;
+
+// }
 
 // The reverse of im2col, add elements back into image
 // matrix col: column matrix to put back into image
