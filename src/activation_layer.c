@@ -26,7 +26,46 @@ tensor forward_activation_layer(layer *l, tensor x)
     // softmax(x)  = e^{x_i} / sum(e^{x_j}) for all x_j in the same row 
 
     assert(x.n >= 2);
+    float* data = y.data;
+    if(a == LOGISTIC){
+        size_t sizeY = tensor_len(y);
+        for(int i = 0; i < sizeY; i++){
+            data[i] = (float) 1.0/ (1.0 + (float) exp(-1.0* data[i]));
+        }
+    } else if(a == RELU){
+        size_t sizeY = tensor_len(y);
 
+        for(int i = 0; i < sizeY; i++){
+            data[i] = (data[i]< 0? 0: data[i]);
+        }
+    } else if(a == LRELU){
+        size_t sizeY = tensor_len(y);
+        for(int i = 0; i < sizeY; i++){
+            data[i] = (data[i]< 0? 0.01 * data[i]: data[i]);
+        }
+    } else { // It's soft max
+        /*
+        for each row (num rows is everything in dim *= eachother)
+            sum the row
+            do the soft max?
+        */
+       size_t numRow = y.size[0];
+       size_t numCol = y.size[1];
+       for(int i = 2; i < y.n; i++){
+        numRow*= y.size[i];
+       }
+       for(int i = 0; i < numRow; i++){
+        size_t rowStart = i*numCol;
+        float sum = 0;
+        for(int j = rowStart; j < rowStart+numCol; j++){
+            sum += (float) exp(data[j]);
+        }
+        for(int j = rowStart; j < rowStart+numCol; j++){
+            data[j] = (float) exp(data[j])/sum;
+        }
+       }
+
+    }
     /* You might want this
     size_t i, j;
     for(i = 0; i < x.size[0]; ++i){
@@ -69,7 +108,28 @@ tensor backward_activation_layer(layer *l, tensor dy)
         // Do stuff in here
     }
     */
-
+    float* dataX= x.data;
+    float* dataDy = dy.data;
+    float* dataDx = dx.data;
+    if(a == LOGISTIC){
+        size_t sizeX = tensor_len(x);
+        for(int i = 0; i < sizeX; i++){
+            float logx = (float) 1.0/ (1 + (float) exp(-1.0* dataX[i]));
+            dataDx[i] = dataDy[i] * logx * (1.0-logx);
+        }
+    } else if(a == RELU){
+        size_t sizeX = tensor_len(x);
+        for(int i = 0; i < sizeX; i++){
+            dataDx[i] = dataDy[i] * (dataX[i] > 0 ? 1 : 0);
+        }
+    } else if(a == LRELU){
+        size_t sizeX = tensor_len(x);
+        for(int i = 0; i < sizeX; i++){
+            dataDx[i] = dataDy[i] * (dataX[i] > 0 ? 1 : 0.01);
+        }
+    } else { // It's soft max
+        // do nothing
+    }
     return dx;
 }
 
