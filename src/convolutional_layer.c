@@ -12,10 +12,21 @@
 // size_t pad: # pixels padding on each edge for convolution
 // returns: column matrix
 
-tensor im2col(tensor im, size_t size_y, size_t size_x, size_t stride, size_t pad)
-{
+float getPixel(tensor im, size_t x, size_t y, size_t channel){
+    if(x < 0 || y < 0){
+        return 0;
+    } else if( x >= im.size[2] || y >= im.size[1] || channel >= im.size[0]){
+        return 0;
+    } else {
+        size_t channelOffset = im.size[2] * im.size[1] * channel;
+        return im.data[channelOffset + x + y*im.size[1]];
+    }
+}
+
+
+tensor im2col(tensor im, size_t size_y, size_t size_x, size_t stride, size_t pad) {
     assert(im.n == 3);
-    size_t i, j, k;
+    // size_t i, j, k;
 
     size_t im_c = im.size[0];
     size_t im_h = im.size[1];
@@ -27,25 +38,29 @@ tensor im2col(tensor im, size_t size_y, size_t size_x, size_t stride, size_t pad
     size_t rows = im_c*size_y*size_x;
     size_t cols = res_w * res_h;
 
-    tensor col = tensor_vmake(2, rows, cols);
+
+    size_t* size = malloc(2*sizeof(size_t));
+    size[0] = rows;
+    size[1] = cols;
+    tensor col = tensor_make(2, size);
     float* colData = col.data;
+
 
     // TODO: 5.1
     // Fill in the column matrix with patches from the image
-    for(int i = 0; i < im_c; i++) {
-        int colnum = 0;
-        for(int j = 0 - pad; j < im_w + pad - size_x; j += stride) {
-            for(int k = 0-pad; k < im_h + pad - size_y; j+= stride) {
-                for(int convRow= 0; convRow < size_y; convRow++) {
-                    for(int convCol = 0; convCol < size_x; convCol++) {
-                        colData[colnum+ rows*(convRow + convCol)];
+    for(size_t i = 0; i < im_c; i++) {
+        size_t colnum = 0;
+        for(size_t j = 0 - pad; j < im_w + pad - size_x; j += stride) {
+            for(size_t k = 0-pad; k < im_h + pad - size_y; k += stride) {
+                for(size_t convRow= 0; convRow < size_y; convRow++) {
+                    for(size_t convCol = 0; convCol < size_x; convCol++) {
                         size_t imXcoord = j + convRow;
                         size_t imYcoord = k + convRow;
-                        if(imXcoord < 0 || imXcoord >= im_w || imYcoord < 0 || imYcoord >= im_h){
-                            colData[colnum+ rows*(convRow + convCol)] = 0;
-                            // we want to add size_x*size_y*i*rows rows down
-                        } else {
-                            colData[colnum + rows*(convRow + convCol)] = im.data[imXcoord + imYcoord*im_w];
+                        // Items per colVec * numColVec
+                        size_t colChanneloffset = (size_x * size_y) * (cols) * i;
+                        col.data[colnum + rows * (convRow + convCol) + colChanneloffset] = 1; // getPixel(im, imXcoord, imYcoord, i);
+                        if(col.data[colnum+ rows * (convRow + convCol) + colChanneloffset] == 1) {
+                            // printf("I am an evil bug");
                         }
                     }
                 }
@@ -53,7 +68,6 @@ tensor im2col(tensor im, size_t size_y, size_t size_x, size_t stride, size_t pad
             }
         }
     }
-
 
     return col;
 }
